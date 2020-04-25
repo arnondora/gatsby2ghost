@@ -1,5 +1,6 @@
 import json
 import datetime
+import markdown2
 
 class Post: 
     def __init__(self, id=1, title="title", slug="slug", markdown="content", excerpt="excerpt"):
@@ -27,31 +28,31 @@ class Post:
 
     def serialise (self) :
         post_dump = {
-            "id":            self.id,
+            # "id":            self.id,
             "title":         self.title,
             "slug":          self.slug,
-            "mobiledoc" :    json.dumps({
+            "mobiledoc" :    {
                 "version" : "0.3.1",
                 "atoms" : [],
-                "cards" : [],
+                'cards': [['markdown', {'cardName': 'markdown', 'markdown': self.markdown}]],
                 "markups" : [],
                 "sections" : []
-            }),
+            },
             "feature_image": getattr(self, 'feature_image', None),
             "featured":      getattr(self, 'featured', 0), 
             "page":          getattr(self, 'is_page', 0),
             "status":        getattr(self, 'is_published', "published"),
-            "published_at":  getattr(self, 'publish_date', datetime.datetime.now().timestamp()),
+            "published_at":  self.publish_date*1000,
             "published_by":  getattr(self, 'author', 1),
             "meta_title":    self.title,
-            "meta_description":getattr(self, 'excerpt', None),
+            # "meta_description":getattr(self, 'excerpt', None),
             "author_id":     getattr(self, 'author', 1),
-            "created_at":    getattr(self, 'publish_date', datetime.datetime.now().timestamp()),
+            "created_at":    self.publish_date*1000,
             "created_by":    getattr(self, 'author', 1),
-            "updated_at":    getattr(self, 'publish_date', datetime.datetime.now().timestamp()),
+            "updated_at":    self.publish_date*1000,
             "updated_by":    getattr(self, 'author', 1),
-            "custom_excerpt":getattr(self, 'excerpt', None),
-            "markdown": self.markdown, 
+            # "custom_excerpt":getattr(self, 'excerpt', None),
+            "html": markdown2.markdown(self.markdown), 
         }
 
         return post_dump
@@ -73,6 +74,7 @@ class MDF :
                 convert_content += line + "\n"
         
         return convert_content
+        # return re.sub('/^\n*((#.*?)|(.*?\n=+))\n+/', '' ,re.sub('/\r\n/g', '\n', convert_content))
 
     def __init__(self, file_path, img_dictionary):
         self.file_pointer = open(file_path, 'r')
@@ -82,6 +84,8 @@ class MDF :
         content = file_components[1]
 
         self.post = Post()
+
+        self.post.slug = file_path.split('/')[-2]
 
         # Trim line breaking on the first char of content
         if content[0] == "\n" :
@@ -105,9 +109,9 @@ class MDF :
             
             elif decomposed_meta[0] == 'image' and len(decomposed_meta[1].replace(' ', '')) > 0:
                 if len(decomposed_meta[1].split('/')) > 1 :
-                    feature_image_name = decomposed_meta[1].split('/')[-1]
+                    feature_image_name = decomposed_meta[1].split('/')[-1].replace(' ', '')
                 else :
-                    feature_image_name = decomposed_meta[1]
+                    feature_image_name = decomposed_meta[1].replace(' ', '')
                 
                 if feature_image_name in img_dictionary :
                     self.post.feature_image = img_dictionary[feature_image_name.replace('"', '').replace('./', '').replace(' ' ,'')]
@@ -126,7 +130,7 @@ class MDF :
                 self.post.excerpt = decomposed_meta[1].replace('"', '')
             
             elif decomposed_meta[0] == 'date' :
-                self.post.excerpt = int(datetime.datetime.strptime(decomposed_meta[1].replace(' ', '').replace('"', '').split('T')[0], '%Y-%m-%d').timestamp())
+                self.post.publish_date = int(datetime.datetime.strptime(decomposed_meta[1].replace(' ', '').replace('"', '').split('T')[0], '%Y-%m-%d').strftime('%s'))
             
             elif decomposed_meta[0] == 'is_page' :
                 self.post.page = 0 if decomposed_meta[1] == "post" else 1

@@ -57,7 +57,7 @@ def write_json_to_destination (destination_path, posts, post_tag, tags) :
     }
 
     destination_file = open(os.path.join(destination_path, 'data.json'), 'w')
-    destination_file.write(json.dumps(json_dump))
+    destination_file.write(json.dumps(json_dump, ensure_ascii=False))
     destination_file.close()
 
     return json_dump
@@ -79,7 +79,7 @@ def create_image_path_convertor (image_file_path, destination_path) :
 
     for image_file in image_file_path :
         file_create_datetime = datetime.datetime.fromtimestamp(os.stat(image_file).st_ctime)        
-        new_path = os.path.join(destination_path, 'content', str(file_create_datetime.year), convert_to_valid_month_format(file_create_datetime.month), image_file.split('/')[-1])
+        new_path = os.path.join('/content/images', str(file_create_datetime.year), convert_to_valid_month_format(file_create_datetime.month), image_file.split('/')[-1])
         image_path_convertor[image_file] = new_path
 
     return image_path_convertor
