@@ -104,8 +104,7 @@ def process_markdown (markdown_file_path_list, image_path_convertor) :
     # Tag Cloud slug -> {name: tag_name, asso_posts: [1,2,3,4]}}
 
     for MD_path in markdown_file_path_list :
-        current_post = MDF(MD_path).post
-        current_post.convert_feature_image_path(image_path_convertor)
+        current_post = MDF(MD_path, image_path_convertor).post
         current_post.assign_id(len(posts)+1)
 
         # Create Non-Exist Tag
