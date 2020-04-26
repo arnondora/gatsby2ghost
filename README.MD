@@ -13,7 +13,7 @@ The content must placed in the following format
         image_x.jpg
     content_2
         index.md
-        image.md
+        image.png
 ```
 
 Moreover, the format in the markdown file is specific in the following format
