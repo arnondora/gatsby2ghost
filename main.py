@@ -79,7 +79,7 @@ def create_image_path_convertor (image_file_path, destination_path) :
 
     for image_file in image_file_path :
         file_create_datetime = datetime.datetime.fromtimestamp(os.stat(image_file).st_ctime)        
-        new_path = os.path.join('/content/images', str(file_create_datetime.year), convert_to_valid_month_format(file_create_datetime.month), image_file.split('/')[-1])
+        new_path = os.path.join(destination_path, 'content/images', str(file_create_datetime.year), convert_to_valid_month_format(file_create_datetime.month), image_file.split('/')[-1])
         image_path_convertor[image_file] = new_path
 
     return image_path_convertor
@@ -88,7 +88,14 @@ def create_image_file_name_to_path (image_path_convertor) :
     image_file_name_to_path = dict()
 
     for new_path in image_path_convertor.values() :
-        image_file_name_to_path[new_path.split('/')[-1]] = new_path
+        decomposed_path = new_path.split('/')[-5:]
+
+        web_relative_path = "/"
+        # Join Path 
+        for part_part in decomposed_path :
+            web_relative_path = os.path.join(web_relative_path,part_part)
+
+        image_file_name_to_path[new_path.split('/')[-1]] = web_relative_path
     return image_file_name_to_path
 
 def image_mover (image_path_convertor) :
@@ -152,6 +159,7 @@ def get_post_tag (tag_cloud) :
             })
 
     return final_post_tag
+    
 def main (args) :
     base_path = args[1]
     destination_path = args[2]
@@ -166,11 +174,14 @@ def main (args) :
     image_path_convertor = create_image_path_convertor(image_file_path, destination_path)
 
     # image_mover(image_path_convertor)
-    # print(str(len(image_path_convertor)) + " files has been moved.")
+    print(str(len(image_path_convertor)) + " files has been moved.")
 
     # Markdown File Management
     posts, tag_cloud = process_markdown(markdown_file_path, create_image_file_name_to_path(image_path_convertor))
     write_json_to_destination (destination_path, posts, get_post_tag(tag_cloud), get_tags(tag_cloud))
+
+    # Print complete message
+    print("Process has been complete the image and data is in ", destination_path)
     
 if __name__ == "__main__":
     main(sys.argv)

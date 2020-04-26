@@ -1,6 +1,5 @@
 import json
 import datetime
-import markdown2
 
 class Post: 
     def __init__(self, id=1, title="title", slug="slug", markdown="content", excerpt="excerpt"):
@@ -28,16 +27,15 @@ class Post:
 
     def serialise (self) :
         post_dump = {
-            # "id":            self.id,
             "title":         self.title,
             "slug":          self.slug,
-            "mobiledoc" :    {
+            "mobiledoc" :    json.dumps({
                 "version" : "0.3.1",
                 "atoms" : [],
                 'cards': [['markdown', {'cardName': 'markdown', 'markdown': self.markdown}]],
                 "markups" : [],
-                "sections" : []
-            },
+                "sections": [[10, 0]]
+            }, ensure_ascii=False),
             "feature_image": getattr(self, 'feature_image', None),
             "featured":      getattr(self, 'featured', 0), 
             "page":          getattr(self, 'is_page', 0),
@@ -45,14 +43,13 @@ class Post:
             "published_at":  self.publish_date*1000,
             "published_by":  getattr(self, 'author', 1),
             "meta_title":    self.title,
-            # "meta_description":getattr(self, 'excerpt', None),
+            "meta_description":getattr(self, 'excerpt', None),
             "author_id":     getattr(self, 'author', 1),
             "created_at":    self.publish_date*1000,
             "created_by":    getattr(self, 'author', 1),
             "updated_at":    self.publish_date*1000,
             "updated_by":    getattr(self, 'author', 1),
-            # "custom_excerpt":getattr(self, 'excerpt', None),
-            "html": markdown2.markdown(self.markdown), 
+            "custom_excerpt":getattr(self, 'excerpt', None),
         }
 
         return post_dump
@@ -63,13 +60,17 @@ class MDF :
         convert_content = ""
 
         for line in content_line :
-            if line[0:1] == "![" :
+            if line[0:2] == "![" :
                 # Image Tag -> Example ![Docker Hub](./install_unifi_controller_docker_2.png)
                 # Let's Extract the components
                 alt = line.split(']')[0][2:]
                 img_path = line.split(']')[1][3:-1]
 
-                convert_content = "![" + alt + "](" + img_path + ")\n"
+                if img_path in image_dict :
+                    img_path = image_dict[img_path]
+
+                convert_content += "![" + alt + "](" + img_path + ")\n"
+
             else :
                 convert_content += line + "\n"
         
@@ -109,9 +110,9 @@ class MDF :
             
             elif decomposed_meta[0] == 'image' and len(decomposed_meta[1].replace(' ', '')) > 0:
                 if len(decomposed_meta[1].split('/')) > 1 :
-                    feature_image_name = decomposed_meta[1].split('/')[-1].replace(' ', '')
+                    feature_image_name = decomposed_meta[1].split('/')[-1].replace(' ', '').replace('"', '')
                 else :
-                    feature_image_name = decomposed_meta[1].replace(' ', '')
+                    feature_image_name = decomposed_meta[1].replace(' ', '').replace('"', '')
                 
                 if feature_image_name in img_dictionary :
                     self.post.feature_image = img_dictionary[feature_image_name.replace('"', '').replace('./', '').replace(' ' ,'')]
@@ -139,6 +140,6 @@ class MDF :
                 self.post.featured = 0 if "false" in decomposed_meta else 1
             
             elif decomposed_meta[0] == 'status' :
-                self.post.is_published = decomposed_meta[1].replace(' ', '')
+                self.post.is_published = decomposed_meta[1].replace(' ', '').replace('"','')
 
         self.file_pointer.close()
